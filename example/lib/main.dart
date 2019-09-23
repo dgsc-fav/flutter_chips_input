@@ -122,6 +122,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   onTap: () => state.selectSuggestion(profile),
                 );
               },
+              // for this example will no use separate field with 'single word' chip
+              chipCreator: (text) {
+                return AppProfile(text, 'jdoe@flutter.io',
+                    'https://d2gg9evh47fn9z.cloudfront.net/800px_COLOURBOX4057996.jpg');
+              },
             ),
           ],
         ),
