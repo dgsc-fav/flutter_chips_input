@@ -69,6 +69,7 @@ class ChipsInputState<T> extends State<ChipsInput<T>> implements TextInputClient
     this._suggestionsBoxController = _SuggestionsBoxController(context);
     this._suggestionsStreamController = StreamController<List<T>>.broadcast();
     _initFocusNode();
+    widget.onChanged(_chips.toList(growable: false));
   }
 
   String filterText(String text) {
