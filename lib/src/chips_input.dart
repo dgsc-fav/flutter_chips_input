@@ -300,7 +300,7 @@ class ChipsInputState<T> extends State<ChipsInput<T>> implements TextInputClient
       selection: TextSelection.collapsed(offset: text.length),
       //composing: TextRange(start: 0, end: text.length),
     );
-    if (_connection == null) _connection = TextInput.attach(this, TextInputConfiguration());
+    if (_connection == null || !_connection.attached) _connection = TextInput.attach(this, TextInputConfiguration());
     _connection.setEditingState(_value);
   }
 
