@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 typedef ChipsInputSuggestions<T> = FutureOr<List<T>> Function(String query);
 typedef ChipSelected<T> = void Function(T data, bool selected);
 typedef ChipsBuilder<T> = Widget Function(BuildContext context, ChipsInputState<T> state, T data);
+typedef ChipCreator<T> = T Function(String text);
 
 class ChipsInput<T> extends StatefulWidget {
   ChipsInput({
@@ -17,6 +18,7 @@ class ChipsInput<T> extends StatefulWidget {
     @required this.suggestionBuilder,
     @required this.findSuggestions,
     @required this.onChanged,
+    this.chipCreator,
     this.onChipTapped,
     this.maxChips,
     this.textStyle,
@@ -33,6 +35,10 @@ class ChipsInput<T> extends StatefulWidget {
   final ChipsBuilder<T> suggestionBuilder;
   final List<T> initialValue;
   final int maxChips;
+
+  /// The [ChipCreator] can create a new chip from inserted text after pressing space button ' '
+  /// (may be used for creating a tag, a category and other single word labels)
+  final ChipCreator chipCreator;
 
   @override
   ChipsInputState<T> createState() => ChipsInputState<T>();
@@ -51,9 +57,7 @@ class ChipsInputState<T> extends State<ChipsInput<T>> implements TextInputClient
   LayerLink _layerLink = LayerLink();
   Size size;
 
-  String get text => String.fromCharCodes(
-        _value.text.codeUnits.where((ch) => ch != kObjectReplacementChar),
-      );
+  String get text => filterText(_value.text);
 
   bool get _hasInputConnection => _connection != null && _connection.attached;
 
@@ -67,8 +71,14 @@ class ChipsInputState<T> extends State<ChipsInput<T>> implements TextInputClient
     _initFocusNode();
   }
 
+  String filterText(String text) {
+    return String.fromCharCodes(
+      text.codeUnits.where((ch) => ch != kObjectReplacementChar),
+    );
+  }
+
   _initFocusNode() {
-    debugPrint("Initializing focus node");
+//    debugPrint("Initializing focus node");
     if (widget.enabled) {
       this._suggestionsBoxController.close();
       if (widget.maxChips == null || _chips.length < widget.maxChips) {
@@ -82,7 +92,7 @@ class ChipsInputState<T> extends State<ChipsInput<T>> implements TextInputClient
         this._focusNode = AlwaysDisabledFocusNode();
     } else
       this._focusNode = AlwaysDisabledFocusNode();
-    debugPrint(this._focusNode.toString());
+//    debugPrint(this._focusNode.toString());
   }
 
   void _onFocusChanged() {
@@ -245,6 +255,22 @@ class ChipsInputState<T> extends State<ChipsInput<T>> implements TextInputClient
   void updateEditingValue(TextEditingValue value) {
     final oldCount = _countReplacements(_value);
     final newCount = _countReplacements(value);
+
+    if (widget.chipCreator != null && value.text.endsWith(' ') && (widget.maxChips == null || _chips.length < widget.maxChips)) {
+      String filteredText = filterText(value.text);
+      if (filteredText
+          .trim()
+          .length > 0) {
+        String text = filteredText;
+
+        T chipValue = widget.chipCreator(text);
+        // insert a new chip as selected from a list
+        selectSuggestion(chipValue);
+
+        return;
+      }
+    }
+
     setState(() {
       if (newCount < oldCount) {
         _chips = Set.from(_chips.take(newCount));
